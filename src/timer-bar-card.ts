@@ -7,7 +7,7 @@ import { HomeAssistant, hasConfigOrEntityChanged } from 'custom-card-helpers';
 import { fillConfig, TimerBarEntityRow } from './timer-bar-entity-row';
 import { fillMushroomConfig, TimerBarMushroomRow, mushroomStyle } from './timer-bar-mushroom-row';
 
-import type { TimerBarConfig, TimerBarEntityConfig, AttributeConfig, Mode } from './types';
+import type { TimerBarConfig, TimerBarEntityConfig, Mode } from './types';
 import { findMode, gatherEntitiesFromConfig, haveEntitiesChanged } from './helpers';
 import { version } from '../package.json';
 
@@ -91,40 +91,41 @@ mushroom??{}} style=${mushroomStyle(config.mushroom??{})} .hass=${this.hass}></t
     }
   }
 
-  private _hasEntityChanged(oldHass: HomeAssistant, ...entities: (string | AttributeConfig | TimerBarEntityConfig | undefined)[]) {
-    for (const entity of entities) {
-      if (!entity) continue;
-      if (typeof entity === 'string') {
-        if (oldHass.states[entity] !== this.hass!.states[entity]) return true;
-      } else if ('entity' in entity) {
-        if (entity.entity && oldHass.states[entity.entity] !== this.hass!.states[entity.entity]) return true;
-      } else if ('script' in entity) {
-        if (entity.script && oldHass.states[entity.script] !== this.hass!.states[entity.script]) return true;
-      }
-    }
-    return false;
-  }
-
   protected shouldUpdate(changedProps: PropertyValues): boolean {
     if (!this.config) return false;
-    if (changedProps.has('config')) return true;
-    if (this.config.entity) {
-      return hasConfigOrEntityChanged(this, changedProps, false);
-    }
 
-    this.updateComplete.then(() => this._patchFontSize());
+    if (hasConfigOrEntityChanged(this, changedProps, false)) {
+      return true;
+    }
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     if (!oldHass || !this.hass) return true;
 
-    const entities = gatherEntitiesFromConfig(this.config)
-    if (this.config.header_entity) entities.push(this.config.header_entity)
-    for (const entity of this.config.entities!) {
-      if (typeof entity === 'string') entities.push(entity)
-      else entities.push(...gatherEntitiesFromConfig(entity))
+    const entities = new Set<string>();
+    gatherEntitiesFromConfig(this.config).forEach(entity => entities.add(entity));
+    if (this.config.header_entity) entities.add(this.config.header_entity);
+    if (this.config.entities) {
+      for (const entity of this.config.entities) {
+        if (typeof entity === 'string') {
+          entities.add(entity);
+        } else {
+          gatherEntitiesFromConfig(entity).forEach(e => entities.add(e));
+        }
+      }
     }
 
-    return haveEntitiesChanged(entities, oldHass, this.hass)
+    return haveEntitiesChanged([...entities], oldHass, this.hass)
+  }
+
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+    if (!this.config) return;
+
+    const singleEntityMode = Boolean(this.config.entity && !this.config.entities);
+    // shouldUpdate must remain side-effect free; run the font-size patch after render instead.
+    if (!singleEntityMode) {
+      this._patchFontSize();
+    }
   }
 
   /** Merges global and per-entity configuration */
