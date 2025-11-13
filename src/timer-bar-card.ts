@@ -94,11 +94,6 @@ mushroom??{}} style=${mushroomStyle(config.mushroom??{})} .hass=${this.hass}></t
   protected shouldUpdate(changedProps: PropertyValues): boolean {
     if (!this.config) return false;
 
-    const singleEntityMode = Boolean(this.config.entity && !this.config.entities);
-    if (!singleEntityMode) {
-      this.updateComplete.then(() => this._patchFontSize());
-    }
-
     if (hasConfigOrEntityChanged(this, changedProps, false)) {
       return true;
     }
@@ -120,6 +115,17 @@ mushroom??{}} style=${mushroomStyle(config.mushroom??{})} .hass=${this.hass}></t
     }
 
     return haveEntitiesChanged([...entities], oldHass, this.hass)
+  }
+
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+    if (!this.config) return;
+
+    const singleEntityMode = Boolean(this.config.entity && !this.config.entities);
+    // shouldUpdate must remain side-effect free; run the font-size patch after render instead.
+    if (!singleEntityMode) {
+      this._patchFontSize();
+    }
   }
 
   /** Merges global and per-entity configuration */
