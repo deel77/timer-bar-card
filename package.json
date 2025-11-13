@@ -10,7 +10,7 @@
     "lovelace",
     "custom-cards"
   ],
-  "module": "timer-bar-card.js",
+  "module": "dist/timer-bar-card.js",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/rianadon/timer-bar-card.git"

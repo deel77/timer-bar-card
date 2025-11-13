@@ -1,5 +1,5 @@
 {
     "name": "Timer Bar Card",
     "render_readme": true,
-    "filename": "timer-bar-card.js"
+    "filename": "dist/timer-bar-card.js"
 }
