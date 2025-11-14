@@ -23,7 +23,7 @@ export default [
   {
     input: "src/timer-bar-card.ts",
     output: {
-      dir: "dist",
+      file: "dist/timer-bar-card.js",
       format: "es",
       inlineDynamicImports: true,
     },
